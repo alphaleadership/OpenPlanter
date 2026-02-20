@@ -38,6 +38,7 @@ The container mounts `./workspace` as the agent's working directory.
 | Anthropic | `claude-opus-4-6` | `ANTHROPIC_API_KEY` |
 | OpenRouter | `anthropic/claude-sonnet-4-5` | `OPENROUTER_API_KEY` |
 | Cerebras | `qwen-3-235b-a22b-instruct-2507` | `CEREBRAS_API_KEY` |
+| Gemini | `gemini-2.0-flash` | `GEMINI_API_KEY` |
 
 Additional service keys: `EXA_API_KEY` (web search), `VOYAGE_API_KEY` (embeddings).
 
@@ -76,7 +77,7 @@ openplanter-agent [options]
 
 | Flag | Description |
 |------|-------------|
-| `--provider NAME` | `auto`, `openai`, `anthropic`, `openrouter`, `cerebras` |
+| `--provider NAME` | `auto`, `openai`, `anthropic`, `openrouter`, `cerebras`, `gemini` |
 | `--model NAME` | Model name or `newest` to auto-select |
 | `--reasoning-effort LEVEL` | `low`, `medium`, `high`, or `none` |
 | `--list-models` | Fetch available models from the provider API |

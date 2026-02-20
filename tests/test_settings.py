@@ -40,6 +40,7 @@ class SettingsTests(unittest.TestCase):
                 default_model_openai="gpt-4.1-mini",
                 default_model_anthropic="claude-opus-4-6",
                 default_model_openrouter="anthropic/claude-sonnet-4-5",
+                default_model_gemini="gemini-2.0-flash",
             )
             store.save(settings)
             loaded = store.load()
@@ -47,13 +48,16 @@ class SettingsTests(unittest.TestCase):
             self.assertEqual(loaded.default_model_openai, "gpt-4.1-mini")
             self.assertEqual(loaded.default_model_anthropic, "claude-opus-4-6")
             self.assertEqual(loaded.default_model_openrouter, "anthropic/claude-sonnet-4-5")
+            self.assertEqual(loaded.default_model_gemini, "gemini-2.0-flash")
 
     def test_default_model_for_provider_specific(self) -> None:
         settings = PersistentSettings(
             default_model="global-model",
             default_model_openai="gpt-4.1-mini",
+            default_model_gemini="gemini-2.0-flash",
         )
         self.assertEqual(settings.default_model_for_provider("openai"), "gpt-4.1-mini")
+        self.assertEqual(settings.default_model_for_provider("gemini"), "gemini-2.0-flash")
 
     def test_default_model_for_provider_fallback(self) -> None:
         settings = PersistentSettings(default_model="global-model")
@@ -66,6 +70,7 @@ class SettingsTests(unittest.TestCase):
         self.assertIsNone(settings.default_model_for_provider("anthropic"))
         self.assertIsNone(settings.default_model_for_provider("openrouter"))
         self.assertIsNone(settings.default_model_for_provider("cerebras"))
+        self.assertIsNone(settings.default_model_for_provider("gemini"))
 
     def test_backward_compat_old_settings(self) -> None:
         """Old settings.json without per-provider keys still loads fine."""
@@ -158,6 +163,11 @@ class InferProviderTests(unittest.TestCase):
         self.assertEqual(infer_provider_for_model("gpt-oss-120b"), "cerebras")
         self.assertEqual(infer_provider_for_model("llama-4-scout-cerebras"), "cerebras")
 
+    def test_gemini_models(self) -> None:
+        self.assertEqual(infer_provider_for_model("gemini-2.0-flash"), "gemini")
+        self.assertEqual(infer_provider_for_model("gemini-1.5-pro"), "gemini")
+        self.assertEqual(infer_provider_for_model("Gemini-Exp"), "gemini")
+
     def test_unknown_returns_none(self) -> None:
         self.assertIsNone(infer_provider_for_model("my-custom-model"))
         self.assertIsNone(infer_provider_for_model("llama-3.1"))
@@ -168,6 +178,7 @@ class ValidateModelProviderTests(unittest.TestCase):
         _validate_model_provider("gpt-5.2", "openai")
         _validate_model_provider("claude-opus-4-6", "anthropic")
         _validate_model_provider("anthropic/claude-sonnet-4-5", "openrouter")
+        _validate_model_provider("gemini-2.0-flash", "gemini")
 
     def test_mismatch_raises(self) -> None:
         with self.assertRaises(ModelError):

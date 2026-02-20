@@ -60,6 +60,10 @@ _MODEL_CONTEXT_WINDOWS: dict[str, int] = {
     "gpt-4o": 128_000,
     "gpt-4.1": 1_000_000,
     "gpt-5-turbo-16k": 16_000,
+    "gemini-2.0-flash": 1_000_000,
+    "gemini-2.0-pro-exp-02-05": 2_000_000,
+    "gemini-1.5-pro": 2_000_000,
+    "gemini-1.5-flash": 1_000_000,
 }
 _DEFAULT_CONTEXT_WINDOW = 128_000
 _CONDENSATION_THRESHOLD = 0.75
@@ -90,11 +94,14 @@ def _model_tier(model_name: str, reasoning_effort: str | None = None) -> int:
 def _lowest_tier_model(model_name: str) -> tuple[str, str | None]:
     """Return (model_name, reasoning_effort) for the lowest-tier executor.
 
-    Anthropic models → haiku.  Unknown → no downgrade (return same name).
+    Anthropic models → haiku.  Gemini models → flash.
+    Unknown → no downgrade (return same name).
     """
     lower = model_name.lower()
     if "claude" in lower:
         return ("claude-haiku-4-5-20251001", None)
+    if "gemini" in lower:
+        return ("gemini-2.0-flash", None)
     return (model_name, None)
 
 
