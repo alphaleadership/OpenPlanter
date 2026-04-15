@@ -95,7 +95,7 @@ def _resolve_model_name(cfg: AgentConfig) -> str:
         if not models:
             raise ModelError(f"No models returned for provider '{cfg.provider}'.")
         return str(models[0]["id"])
-    return PROVIDER_DEFAULT_MODELS.get(cfg.provider, "claude-opus-4-6")
+    return PROVIDER_DEFAULT_MODELS.get(cfg.provider, "gpt-5.2")
 
 
 def build_model_factory(cfg: AgentConfig) -> ModelFactory | None:
