@@ -1116,7 +1116,7 @@ class ScriptedModel:
 @dataclass
 class EchoFallbackModel:
     note: str = (
-        "No provider API keys configured. Set OpenAI/Anthropic/OpenRouter keys "
+        "No provider API keys configured. Set OpenAI/Anthropic/OpenRouter/Gemini keys "
         "or use --provider ollama for a local model."
     )
 

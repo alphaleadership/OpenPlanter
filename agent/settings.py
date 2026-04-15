@@ -31,6 +31,7 @@ class PersistentSettings:
     default_model_openrouter: str | None = None
     default_model_cerebras: str | None = None
     default_model_ollama: str | None = None
+    default_model_gemini: str | None = None
 
     def default_model_for_provider(self, provider: str) -> str | None:
         per_provider = {
@@ -39,6 +40,7 @@ class PersistentSettings:
             "openrouter": self.default_model_openrouter,
             "cerebras": self.default_model_cerebras,
             "ollama": self.default_model_ollama,
+            "gemini": self.default_model_gemini,
         }
         specific = per_provider.get(provider)
         if specific:
@@ -56,6 +58,7 @@ class PersistentSettings:
             default_model_openrouter=(self.default_model_openrouter or "").strip() or None,
             default_model_cerebras=(self.default_model_cerebras or "").strip() or None,
             default_model_ollama=(self.default_model_ollama or "").strip() or None,
+            default_model_gemini=(self.default_model_gemini or "").strip() or None,
         )
 
     def to_json(self) -> dict[str, str]:
@@ -74,6 +77,8 @@ class PersistentSettings:
             payload["default_model_cerebras"] = self.default_model_cerebras
         if self.default_model_ollama:
             payload["default_model_ollama"] = self.default_model_ollama
+        if self.default_model_gemini:
+            payload["default_model_gemini"] = self.default_model_gemini
         return payload
 
     @classmethod
@@ -90,6 +95,7 @@ class PersistentSettings:
             default_model_openrouter=(str(payload.get("default_model_openrouter", "")).strip() or None),
             default_model_cerebras=(str(payload.get("default_model_cerebras", "")).strip() or None),
             default_model_ollama=(str(payload.get("default_model_ollama", "")).strip() or None),
+            default_model_gemini=(str(payload.get("default_model_gemini", "")).strip() or None),
         ).normalized()
 
 

@@ -33,6 +33,7 @@ _OLLAMA_RE = re.compile(
     r"neural-chat|dolphin|wizardlm|orca|nous-hermes|command-r|qwen(?!-3))",
     re.IGNORECASE,
 )
+_GEMINI_RE = re.compile(r"^gemini", re.IGNORECASE)
 
 
 def infer_provider_for_model(model: str) -> str | None:
@@ -43,6 +44,8 @@ def infer_provider_for_model(model: str) -> str | None:
         return "anthropic"
     if _CEREBRAS_RE.search(model):
         return "cerebras"
+    if _GEMINI_RE.search(model):
+        return "gemini"
     if _OPENAI_RE.search(model):
         return "openai"
     if _OLLAMA_RE.search(model):
@@ -83,6 +86,10 @@ def _fetch_models_for_provider(cfg: AgentConfig, provider: str) -> list[dict]:
         return list_openai_models(api_key=cfg.cerebras_api_key, base_url=cfg.cerebras_base_url)
     if provider == "ollama":
         return list_ollama_models(base_url=cfg.ollama_base_url)
+    if provider == "gemini":
+        if not cfg.gemini_api_key:
+            raise ModelError("Gemini key not configured.")
+        return list_openai_models(api_key=cfg.gemini_api_key, base_url=cfg.gemini_base_url)
     raise ModelError(f"Unknown provider: {provider}")
 
 
@@ -98,7 +105,7 @@ def _resolve_model_name(cfg: AgentConfig) -> str:
         if not models:
             raise ModelError(f"No models returned for provider '{cfg.provider}'.")
         return str(models[0]["id"])
-    return PROVIDER_DEFAULT_MODELS.get(cfg.provider, "claude-opus-4-6")
+    return PROVIDER_DEFAULT_MODELS.get(cfg.provider, "gpt-5.2")
 
 
 def build_model_factory(cfg: AgentConfig) -> ModelFactory | None:
@@ -147,9 +154,16 @@ def build_model_factory(cfg: AgentConfig) -> ModelFactory | None:
                 first_byte_timeout=120,
                 strict_tools=False,
             )
+        if provider == "gemini" and cfg.gemini_api_key:
+            return OpenAICompatibleModel(
+                model=model_name,
+                api_key=cfg.gemini_api_key,
+                base_url=cfg.gemini_base_url,
+                reasoning_effort=effort,
+            )
         raise ModelError(f"No API key available for model '{model_name}' (provider={provider})")
 
-    if cfg.anthropic_api_key or cfg.openai_api_key or cfg.openrouter_api_key or cfg.cerebras_api_key or cfg.ollama_base_url:
+    if cfg.anthropic_api_key or cfg.openai_api_key or cfg.openrouter_api_key or cfg.cerebras_api_key or cfg.ollama_base_url or cfg.gemini_api_key:
         return _factory
     return None
 
@@ -208,6 +222,13 @@ def build_engine(cfg: AgentConfig) -> RLMEngine:
             reasoning_effort=cfg.reasoning_effort,
             first_byte_timeout=120,
             strict_tools=False,
+        )
+    elif cfg.provider == "gemini" and cfg.gemini_api_key:
+        model = OpenAICompatibleModel(
+            model=model_name,
+            api_key=cfg.gemini_api_key,
+            base_url=cfg.gemini_base_url,
+            reasoning_effort=cfg.reasoning_effort,
         )
     elif cfg.provider == "anthropic" and cfg.anthropic_api_key:
         model = AnthropicModel(

@@ -24,8 +24,6 @@ def _queue_prompt_style():
     return Style.from_dict({"dim": "ansigray"})
 
 
-
-
 def _make_left_markdown():
     """Create a Markdown subclass that left-aligns headings instead of centering."""
     from rich import box as _box
@@ -50,7 +48,15 @@ def _make_left_markdown():
     return _LeftMarkdown
 
 
-_LeftMarkdown = _make_left_markdown()
+_LeftMarkdown: Any = None
+
+
+def get_left_markdown() -> Any:
+    global _LeftMarkdown
+    if _LeftMarkdown is None:
+        _LeftMarkdown = _make_left_markdown()
+    return _LeftMarkdown
+
 
 _PLANT_LEFT = [
     " .oOo.  ",
@@ -131,6 +137,11 @@ MODEL_ALIASES: dict[str, str] = {
     "llama": "llama3.2",
     "llama3": "llama3.2",
     "mistral": "mistral",
+    "gemini": "gemini-2.0-flash",
+    "flash": "gemini-2.0-flash",
+    "pro": "gemini-2.0-pro-exp-02-05",
+    "flash2": "gemini-2.0-flash",
+    "pro2": "gemini-2.0-pro-exp-02-05",
 }
 
 
@@ -177,6 +188,7 @@ def _api_key_for_provider(cfg: AgentConfig, provider: str) -> str | None:
         "openrouter": cfg.openrouter_api_key,
         "cerebras": cfg.cerebras_api_key,
         "ollama": "ollama",
+        "gemini": cfg.gemini_api_key,
     }.get(provider)
 
 
@@ -192,6 +204,8 @@ def _available_providers(cfg: AgentConfig) -> list[str]:
     if cfg.cerebras_api_key:
         providers.append("cerebras")
     providers.append("ollama")
+    if cfg.gemini_api_key:
+        providers.append("gemini")
     return providers
 
 
@@ -220,7 +234,7 @@ def handle_model_command(args: str, ctx: ChatContext) -> list[str]:
         list_target = parts[1] if len(parts) > 1 else None
         if list_target == "all":
             providers = _available_providers(ctx.cfg)
-        elif list_target in {"openai", "anthropic", "openrouter", "cerebras", "ollama"}:
+        elif list_target in {"openai", "anthropic", "openrouter", "cerebras", "ollama", "gemini"}:
             providers = [list_target]
         else:
             providers = [ctx.cfg.provider]
@@ -282,6 +296,8 @@ def handle_model_command(args: str, ctx: ChatContext) -> list[str]:
             settings.default_model_cerebras = new_model
         elif provider == "ollama":
             settings.default_model_ollama = new_model
+        elif provider == "gemini":
+            settings.default_model_gemini = new_model
         else:
             settings.default_model = new_model
         ctx.settings_store.save(settings)
@@ -969,7 +985,7 @@ class RichREPL:
         self._flush_step()
 
         self.console.print()
-        self.console.print(_LeftMarkdown(answer), justify="left")
+        self.console.print(get_left_markdown()(answer), justify="left")
 
         token_str = _format_session_tokens(self.ctx.runtime.engine.session_tokens)
         if token_str:

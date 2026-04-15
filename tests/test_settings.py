@@ -40,6 +40,8 @@ class SettingsTests(unittest.TestCase):
                 default_model_openai="gpt-4.1-mini",
                 default_model_anthropic="claude-opus-4-6",
                 default_model_openrouter="anthropic/claude-sonnet-4-5",
+                default_model_gemini="gemini-2.0-flash",
+                default_model_ollama="mistral",
             )
             store.save(settings)
             loaded = store.load()
@@ -47,13 +49,19 @@ class SettingsTests(unittest.TestCase):
             self.assertEqual(loaded.default_model_openai, "gpt-4.1-mini")
             self.assertEqual(loaded.default_model_anthropic, "claude-opus-4-6")
             self.assertEqual(loaded.default_model_openrouter, "anthropic/claude-sonnet-4-5")
+            self.assertEqual(loaded.default_model_gemini, "gemini-2.0-flash")
+            self.assertEqual(loaded.default_model_ollama, "mistral")
 
     def test_default_model_for_provider_specific(self) -> None:
         settings = PersistentSettings(
             default_model="global-model",
             default_model_openai="gpt-4.1-mini",
+            default_model_gemini="gemini-2.0-flash",
+            default_model_ollama="llama3.2",
         )
         self.assertEqual(settings.default_model_for_provider("openai"), "gpt-4.1-mini")
+        self.assertEqual(settings.default_model_for_provider("gemini"), "gemini-2.0-flash")
+        self.assertEqual(settings.default_model_for_provider("ollama"), "llama3.2")
 
     def test_default_model_for_provider_fallback(self) -> None:
         settings = PersistentSettings(default_model="global-model")
@@ -66,6 +74,8 @@ class SettingsTests(unittest.TestCase):
         self.assertIsNone(settings.default_model_for_provider("anthropic"))
         self.assertIsNone(settings.default_model_for_provider("openrouter"))
         self.assertIsNone(settings.default_model_for_provider("cerebras"))
+        self.assertIsNone(settings.default_model_for_provider("gemini"))
+        self.assertIsNone(settings.default_model_for_provider("ollama"))
 
     def test_per_provider_model_ollama(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -77,13 +87,6 @@ class SettingsTests(unittest.TestCase):
             store.save(settings)
             loaded = store.load()
             self.assertEqual(loaded.default_model_ollama, "mistral")
-
-    def test_default_model_for_provider_ollama(self) -> None:
-        settings = PersistentSettings(
-            default_model="global-model",
-            default_model_ollama="llama3.2",
-        )
-        self.assertEqual(settings.default_model_for_provider("ollama"), "llama3.2")
 
     def test_backward_compat_old_settings(self) -> None:
         """Old settings.json without per-provider keys still loads fine."""
@@ -186,6 +189,11 @@ class InferProviderTests(unittest.TestCase):
         self.assertEqual(infer_provider_for_model("deepseek-v2"), "ollama")
         self.assertEqual(infer_provider_for_model("qwen2.5"), "ollama")
 
+    def test_gemini_models(self) -> None:
+        self.assertEqual(infer_provider_for_model("gemini-2.0-flash"), "gemini")
+        self.assertEqual(infer_provider_for_model("gemini-1.5-pro"), "gemini")
+        self.assertEqual(infer_provider_for_model("Gemini-Exp"), "gemini")
+
     def test_cerebras_qwen3_not_ollama(self) -> None:
         """qwen-3 models go to Cerebras, not Ollama."""
         self.assertEqual(infer_provider_for_model("qwen-3-235b-a22b-instruct-2507"), "cerebras")
@@ -200,6 +208,7 @@ class ValidateModelProviderTests(unittest.TestCase):
         _validate_model_provider("gpt-5.2", "openai")
         _validate_model_provider("claude-opus-4-6", "anthropic")
         _validate_model_provider("anthropic/claude-sonnet-4-5", "openrouter")
+        _validate_model_provider("gemini-2.0-flash", "gemini")
 
     def test_mismatch_raises(self) -> None:
         with self.assertRaises(ModelError):
